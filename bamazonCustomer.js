@@ -46,16 +46,17 @@ function displayProducts(){
         }
         ]).then(answer => {
             var item = answer.rawlist.replace(/\d+./g, '').trim()
-            var quantity = answer.input            
-            console.log(item)
+            var quantity = answer.input                       
+            
             connection.query(`SELECT * FROM bamazon_db.products WHERE product_name = "${item}"`, function(err, res) {
+                var productQuantity = res[0].stock_quantity
                 if (err) throw err;
                 
-                if (quantity > res[0].stock_quantity){
+                if (quantity > productQuantity){
                     console.log(`\r\nInsufficient quantity!\r\n`)
                     cont()
                 }else{
-                    updateDb(item,quantity)
+                    updateDb(item,quantity,productQuantity)
                     console.log(`\r\nYou purchased ${quantity} ${item}(s) for a total of $${(res[0].price * quantity)}\r\n`)
                     cont()
                 }
@@ -74,8 +75,12 @@ function validateInput(value) {
 	}
 }
 
-function updateDb(item,quantity){
-    // connection.query(`UPDATE bamazon_db.products SET stock_quantity = ${quantity} WHERE product_name = ${item} `)
+function updateDb(item,quantity,productQuantity){
+    var updateStr = 'UPDATE bamazon_db.products SET stock_quantity = ' + (productQuantity - quantity) + ' WHERE product_name = "' + item+'"';
+    
+    connection.query(updateStr, function(err, data) {
+        if (err) throw err;
+    })
 }
 
 function cont(){
